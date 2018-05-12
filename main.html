@@ -19,10 +19,10 @@
 
     <div class="container">
         <div class="row">
-            <div class="col-md-8">
+            <div class="col-lg-6">
                 <canvas id="tetrisCanvas"></canvas>
             </div>
-            <div class="col-md-4">
+            <div class="col-lg-4"  style="font-size:2em">
                 <div class="row">
                     <div class="col-md-12">
                         <canvas id="nextTetrominoCanvas"></canvas>
@@ -42,11 +42,11 @@
                 </div>
                 <div class="row">
                     <div class="col-md-12">
-                        <label>Score</label>
+                        <label >Score</label>
                         <span id="score">0</span>
                     </div>
                 </div>
-                <div class="row">
+                <div class="row" style="font-size:4em">
                     <div class="col-md-12">
                         <h1>Tetris</h1>
                     </div>
@@ -78,6 +78,8 @@
             var lines = 0;
             var maxRows = 20;
             var maxColumns = 10;
+            var maxNextColumns = 5;
+            var maxNextRows = 5;
             var blockWidth = 50;
             var blockHeight = 50;
             var KEY = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, ESC: 27, SPACE: 32 };
@@ -91,7 +93,7 @@
                     I: { blocks: [0x0F00, 0x2222, 0x00F0, 0x4444], color: 'cyan' },
                     J: { blocks: [0x44C0, 0x8E00, 0x6440, 0x0E20], color: 'blue' },
                     L: { blocks: [0x4460, 0x0E80, 0xC440, 0x2E00], color: 'orange' },
-                    O: { blocks: [0xCC00, 0xCC00, 0xCC00, 0xCC00], color: 'yellow' },
+                    O: { blocks: [0x0660, 0x0660, 0x0660, 0x0660], color: 'yellow' },
                     S: { blocks: [0x06C0, 0x8C40, 0x6C00, 0x4620], color: 'green' },
                     Z: { blocks: [0x0C60, 0x4C80, 0xC600, 0x2640], color: 'red' },
                     T: { blocks: [0x0E40, 0x4C40, 0x4E00, 0x4640], color: 'purple' },
@@ -133,8 +135,8 @@
                 tetrisContext.translate(0.5, 0.5); // for crisp 1px black lines      
 
                 var nextTetrominoCanvas = getById("nextTetrominoCanvas");
-                nextTetrominoCanvas.height = blockHeight * 4;
-                nextTetrominoCanvas.width = blockWidth * 4
+                nextTetrominoCanvas.height = blockHeight * maxNextRows;
+                nextTetrominoCanvas.width = blockWidth * maxNextColumns;
                 nextTetrominoContext = nextTetrominoCanvas.getContext('2d');
                 nextTetrominoContext.translate(0.5, 0.5); // for crisp 1px black lines      
 
@@ -439,9 +441,9 @@
                     return;
                 }
 
-                nextTetrominoContext.clearRect(-1, -1, blockWidth * 4 + 1, blockHeight * 4 + 1);
+                nextTetrominoContext.clearRect(-1, -1, blockWidth * maxNextColumns + 1, blockHeight * maxNextRows + 1);
 
-                forEachBlock(nextTetromino, 0, 0, function (x, y) {
+                forEachBlock(nextTetromino, 0.5, 0.5, function (x, y) {
                     drawBlock(nextTetrominoContext, x, y, nextTetromino.color);
                 })
 
