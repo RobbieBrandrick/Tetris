@@ -381,6 +381,38 @@
 
             }
 
+            function reset(){
+
+                score = 0;
+                lines = 0;
+                blocks = [];
+
+                invalidate();
+                invalidateScore();
+                invalidateNext();
+                getNextTetromino();                
+
+            }
+
+            function gameOver()
+            {
+
+                var isGameOver = false;
+
+                for(var x = 0; x < maxColumns; x++)
+                {
+
+                    if(getBlocks(x, 0)){
+                        isGameOver = true;
+                        break;
+                    }
+
+                }
+
+                return isGameOver;
+
+            }
+
             function drop() {
 
                 var isMoved = move(KEY.DOWN);
@@ -393,6 +425,12 @@
 
                     getNextTetromino();
                     clearLines();
+
+                    if(gameOver())
+                    {
+                        reset();
+                    }
+
                     invalidate();
                 }
 
