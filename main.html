@@ -11,13 +11,50 @@
             border: 1px solid black;
         }
     </style>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB"
+        crossorigin="anonymous">
 </head>
 
 <body>
 
-    <canvas id="tetrisCanvas"></canvas>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-8">
+                <canvas id="tetrisCanvas"></canvas>
+            </div>
+            <div class="col-md-4">
+                <div class="row">
+                    <div class="col-md-12">
+                        <canvas id="nextTetrominoCanvas"></canvas>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <label>Level</label>
+                        <span id="level">1</span>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <label>Lines</label>
+                        <span id="lines">0</span>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <label>Score</label>
+                        <span id="score">0</span>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <h1>Tetris</h1>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <div id="score">0</div>
 
     <script type="text/javascript">
 
@@ -34,7 +71,11 @@
             //Game Variables
             //
             var tetrisContext;
+            var nextTetrominoContext;
+            var currentTetromino;
+            var nextTetromino;
             var score = 0;
+            var lines = 0;
             var maxRows = 20;
             var maxColumns = 10;
             var blockWidth = 50;
@@ -77,17 +118,26 @@
                 }
 
                 setupCanvas();
+                registerEvents();
+                getNextTetromino();
                 gameloop();
 
             }
 
             function setupCanvas() {
-                var canvas = getById("tetrisCanvas");
-                canvas.height = blockHeight * maxRows;
-                canvas.width = blockWidth * maxColumns;
-                tetrisContext = canvas.getContext('2d');
+
+                var tetrisCanvas = getById("tetrisCanvas");
+                tetrisCanvas.height = blockHeight * maxRows;
+                tetrisCanvas.width = blockWidth * maxColumns;
+                tetrisContext = tetrisCanvas.getContext('2d');
                 tetrisContext.translate(0.5, 0.5); // for crisp 1px black lines      
-                registerEvents();
+
+                var nextTetrominoCanvas = getById("nextTetrominoCanvas");
+                nextTetrominoCanvas.height = blockHeight * 4;
+                nextTetrominoCanvas.width = blockWidth * 4
+                nextTetrominoContext = nextTetrominoCanvas.getContext('2d');
+                nextTetrominoContext.translate(0.5, 0.5); // for crisp 1px black lines      
+
             }
 
             function update(time) {
@@ -109,6 +159,7 @@
 
             function invalidate() { invalidate.gameboard = true; }
             function invalidateScore() { invalidate.score = true; }
+            function invalidateNext() { invalidate.next = true; }
 
             function getBlocks(x, y) {
 
@@ -185,6 +236,8 @@
                 } else if (event.keyCode == KEY.SPACE) {
                     inputs.push(KEY.SPACE);
                 }
+
+                event.preventDefault();
 
             };
 
@@ -299,12 +352,13 @@
 
                     if (clearLine) {
                         numberOfLinesCleared++;
+                        lines++;
 
                         for (var y2 = y; y2 > 0; y2--) {
                             for (var x2 = 0; x2 < maxColumns; x2++) {
-                                blocks[x2][y2] = blocks[x2][y2-1];
+                                blocks[x2][y2] = blocks[x2][y2 - 1];
                             }
-                         }
+                        }
 
                         invalidate();
                         invalidateScore();
@@ -317,6 +371,13 @@
 
             }
 
+            function getNextTetromino() {
+
+                currentTetromino = nextTetromino || getRandomTetromino();
+                nextTetromino = getRandomTetromino();
+                invalidateNext();
+
+            }
 
             function drop() {
 
@@ -328,14 +389,12 @@
                         setBlocks(x, y, currentTetromino)
                     })
 
-                    currentTetromino = getRandomTetromino();
+                    getNextTetromino();
                     clearLines();
                     invalidate();
                 }
 
             }
-
-            var currentTetromino = getRandomTetromino();
 
             //
             //Render
@@ -345,14 +404,14 @@
                     return;
                 }
 
-                tetrisContext.clearRect(0, 0, maxColumns * blockWidth, maxRows * blockHeight);
+                tetrisContext.clearRect(-1, -1, maxColumns * blockWidth + 1, maxRows * blockHeight + 1);
 
                 var block;
 
                 for (var x = 0; x < maxColumns; x++) {
                     for (var y = 0; y < maxRows; y++) {
                         if (block = getBlocks(x, y))
-                            drawBlock(x, y, block.color);
+                            drawBlock(tetrisContext, x, y, block.color);
                     }
                 }
 
@@ -364,30 +423,49 @@
 
             function drawScore() {
 
-                if (!invalidate.score) { 
-                    return; 
+                if (!invalidate.score) {
+                    return;
                 }
 
                 getById("score").innerText = score;
+                getById("lines").innerText = lines;
+
+                invalidate.score = false;
 
             }
+
+            function drawNextTetromino() {
+                if (!invalidate.next) {
+                    return;
+                }
+
+                nextTetrominoContext.clearRect(-1, -1, blockWidth * 4 + 1, blockHeight * 4 + 1);
+
+                forEachBlock(nextTetromino, 0, 0, function (x, y) {
+                    drawBlock(nextTetrominoContext, x, y, nextTetromino.color);
+                })
+
+                invalidate.next = false;
+            }
+
 
             function draw() {
 
                 drawGameboard();
                 drawScore();
+                drawNextTetromino();
 
             }
 
-            function drawBlock(x, y, color) {
-                tetrisContext.fillStyle = color;
-                tetrisContext.fillRect(x * blockWidth, y * blockWidth, blockWidth, blockHeight);
-                tetrisContext.fill();
+            function drawBlock(ctx, x, y, color) {
+                ctx.fillStyle = color;
+                ctx.fillRect(x * blockWidth, y * blockWidth, blockWidth, blockHeight);
+                ctx.fill();
             }
 
             function drawTetromino() {
                 forEachBlock(currentTetromino, currentTetromino.x, currentTetromino.y, function (x, y) {
-                    drawBlock(x, y, currentTetromino.color);
+                    drawBlock(tetrisContext, x, y, currentTetromino.color);
                 })
             }
 
