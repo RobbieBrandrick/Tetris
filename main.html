@@ -31,7 +31,7 @@
                 <div class="row">
                     <div class="col-md-12">
                         <label>Level</label>
-                        <span id="level">1</span>
+                        <span id="level">0</span>
                     </div>
                 </div>
                 <div class="row">
@@ -63,7 +63,7 @@
             //
             //Helpers
             //
-            function timestamp() { return Date.now(); }
+            function timestamp() { return performance.now(); }
 
             function getById(id) { return document.getElementById(id); }
 
@@ -76,8 +76,13 @@
             var nextTetromino;
             var score = 0;
             var lines = 0;
-            var maxRows = 20;
-            var maxColumns = 10;
+            var level = 10;
+            var maxLevel = 18;
+            var levels = [48, 43, 38, 33, 28, 23, 18, 13,  8,  6,  5,  5,  5,  4,  4,  4,  3,  3, 3, 2]                 
+  //19-28             2 (0.03s)
+//    29+             1 (0.02s)                
+          var maxRows = 20;
+          var maxColumns = 10;
             var maxNextColumns = 5;
             var maxNextRows = 5;
             var blockWidth = 50;
@@ -106,12 +111,13 @@
 
             function run() {
 
-                var last = now = timestamp();
+                var last = timestamp();
 
                 function gameloop() {
                     requestAnimationFrame(gameloop);
 
-                    now = timestamp();
+                    var now = timestamp();
+
                     update((now - last) / 1000);
 
                     draw();
@@ -148,7 +154,7 @@
 
                 dropTime += time;
 
-                if (dropTime > maxDropTime) {
+                if (dropTime > levels[level] / 60) {
                     dropTime = 0;
                     drop()
                 }
@@ -371,6 +377,12 @@
 
                 score += numberOfLinesCleared > 0 ? 100 * Math.pow(2, numberOfLinesCleared - 1) : 0;
 
+                if(lines / 10 >= level + 1)
+                {
+                    level++;
+                }
+
+
             }
 
             function getNextTetromino() {
@@ -385,6 +397,7 @@
 
                 score = 0;
                 lines = 0;
+                level = 0;
                 blocks = [];
 
                 invalidate();
@@ -469,6 +482,7 @@
 
                 getById("score").innerText = score;
                 getById("lines").innerText = lines;
+                getById("level").innerText = level;
 
                 invalidate.score = false;
 
