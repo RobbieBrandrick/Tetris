@@ -46,15 +46,44 @@
                         <span id="score">0</span>
                     </div>
                 </div>
-                <div class="row" style="font-size:4em">
-                    <div class="col-md-12">
-                        <h1>Tetris</h1>
+            </div>
+        </div>
+
+        <div class="modal fade" id="pauseMenu" tabindex="-1" role="dialog" aria-labelledby="pauseMenuLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="pauseMenuLabel">Paused</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <h5>Controls</h5>
+                        <ul>
+                            <li>Esc - Pause</li>
+                            <li>Arrows - Moves Piece</li>
+                            <li>Space - Rotates Piece</li>
+                        </ul>
+                        <h5>Choose New Level</h5>
+                        <div id="levels">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal" id="pauseMenuClose" >Close</button>
+                        <button type="button" class="btn btn-primary" id="pauseMenuStart">Start</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+        crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+        crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+        crossorigin="anonymous"></script>
 
     <script type="text/javascript">
 
@@ -64,8 +93,8 @@
             //Helpers
             //
             function timestamp() { return performance.now(); }
-            function getById(id) { return document.getElementById(id); }
-            function html(id, html) { getById(id).innerHTML = html; }
+            function get(id) { return document.getElementById(id); }
+            function html(id, html) { get(id).innerHTML = html; }
 
             //
             //Game Constants
@@ -101,11 +130,13 @@
             var score = 0;
             var lines = 0;
             var level = 0;
+            var lastFrame;
             var dropTime = 0;
             var inputTime = 0;
             var blocks = [];
             var input = {};
             var invalidate;
+            var isPlaying = true;
 
             //
             //Game Logic
@@ -113,37 +144,54 @@
 
             function run() {
 
-                function gameloop() {
-                    requestAnimationFrame(gameloop);
-
-                    var now = timestamp();
-
-                    update((now - last) / 1000);
-
-                    draw();
-
-                    last = now;
-                }
-
                 setupCanvas();
+                setUpPause();
                 registerEvents();
                 reset();
-                var last = timestamp();
+                lastFrame = timestamp();
                 gameloop();
 
             }
 
+            function gameloop() {
+                requestAnimationFrame(gameloop);
+
+                var now = timestamp();
+
+                update((now - lastFrame) / 1000);
+
+                draw();
+
+                lastFrame = now;
+            }
+
             function setupCanvas() {
 
-                var tetrisCanvas = getById("tetrisCanvas");
+                var tetrisCanvas = get("tetrisCanvas");
                 tetrisCanvas.height = blockHeight * maxRows;
                 tetrisCanvas.width = blockWidth * maxColumns;
                 tetrisContext = tetrisCanvas.getContext('2d');
 
-                var nextTetrominoCanvas = getById("nextTetrominoCanvas");
+                var nextTetrominoCanvas = get("nextTetrominoCanvas");
                 nextTetrominoCanvas.height = blockHeight * maxNextRows;
                 nextTetrominoCanvas.width = blockWidth * maxNextColumns;
                 nextContext = nextTetrominoCanvas.getContext('2d');
+
+            }
+
+            function setUpPause() {
+
+                let levels = get("levels");
+
+                for (let i = 0; i <= 10; i++) {
+
+                    let button = document.createElement("button");
+                    button.innerText = i;
+                    button.onclick = function () { reset(); level = this.innerText; $("#pauseMenu").modal('toggle'); };
+                    button.classList = "btn btn-primary";
+                    levels.appendChild(button);
+
+                }
 
             }
 
@@ -168,6 +216,8 @@
             function registerEvents() {
                 document.addEventListener("keydown", handleKeyDown);
                 document.addEventListener("keyup", handleKeyUp);
+                get("pauseMenuStart").addEventListener("click", pause);
+                get("pauseMenuClose").addEventListener("click", pause);                
             }
 
             function handleKeyDown(event) {
@@ -188,6 +238,9 @@
                     handled = true;
                 } else if (event.keyCode == KEY.SPACE) {
                     input = KEY.SPACE;
+                    handled = true;
+                } else if (event.keyCode == KEY.ESC) {
+                    input = KEY.ESC;
                     handled = true;
                 }
 
@@ -224,6 +277,7 @@
             function invalidate() { invalidate.gameboard = true; }
             function invalidateScore() { invalidate.score = true; }
             function invalidateNext() { invalidate.next = true; }
+            function invalidatePause() { invalidate.pause = true; }
 
             function getBlocks(x, y) {
 
@@ -272,6 +326,10 @@
 
             function rotate() {
 
+                if (!isPlaying) {
+                    return;
+                }
+
                 var previousDirection = current.direction;
 
                 if (current.direction == 3) {
@@ -289,6 +347,10 @@
             }
 
             function move(input) {
+
+                if (!isPlaying) {
+                    return;
+                }
 
                 var x = current.x;
                 var y = current.y;
@@ -317,6 +379,12 @@
 
             }
 
+            function pause() {
+                isPlaying = !isPlaying;
+
+                invalidatePause();
+            }
+
             function handleInput() {
 
                 if (!input) {
@@ -336,6 +404,11 @@
                     case KEY.SPACE:
                         input = 0;
                         rotate();
+                        break;
+                    case KEY.ESC:
+                        pause();
+                        input = 0;
+                        break;
                     default:
                 }
 
@@ -419,9 +492,11 @@
                 level = 0;
                 blocks = [];
 
+                pause();
                 invalidate();
                 invalidateScore();
                 invalidateNext();
+                invalidatePause();
                 getNextTetromino();
 
             }
@@ -444,6 +519,10 @@
             }
 
             function drop() {
+
+                if (!isPlaying) {
+                    return;
+                }
 
                 var isMoved = move(KEY.DOWN);
 
@@ -494,6 +573,7 @@
                 drawGameboard();
                 drawScore();
                 drawNext();
+                drawPause();
 
             }
 
@@ -538,6 +618,17 @@
                 })
 
                 invalidate.next = false;
+            }
+
+            function drawPause() {
+                if (!invalidate.pause) {
+                    return;
+                }
+
+                $("#pauseMenu").modal('toggle');
+
+                invalidate.pause = false;
+
             }
 
             function drawBlock(ctx, x, y, color) {
