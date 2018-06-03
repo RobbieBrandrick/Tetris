@@ -59,12 +59,18 @@
                         </button>
                     </div>
                     <div class="modal-body">
-                        <h5>Controls</h5>
+                        <h5>Keyboard Controls</h5>
                         <ul>
                             <li>Esc - Pause</li>
                             <li>Arrows - Moves Piece</li>
                             <li>Space - Rotates Piece</li>
                         </ul>
+                        <h5>Touch/Mouse Controls</h5>
+                        <ul>
+                            <li>NOT SUPPORTED - Pause</li>
+                            <li>Swipe - Moves Piece</li>
+                            <li>Tap - Rotates Piece</li>
+                        </ul>                        
                         <h5>Choose New Level</h5>
                         <div id="levels">
                         </div>
@@ -120,11 +126,11 @@
                 T: { blocks: [0x0E40, 0x4C40, 0x4E00, 0x4640], color: 'purple' },
             };
             const TOUCHSTATE = { 
-                DEFAULT = 1, 
-                LEFT = 2,
-                RIGHT = 3,
-                DOWN = 4,
-                ROTATE = 5,
+                DEFAULT: 1, 
+                LEFT: 2,
+                RIGHT: 3,
+                DOWN: 4,
+                ROTATE: 5,
             };
 
             //
