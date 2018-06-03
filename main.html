@@ -54,7 +54,7 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title" id="pauseMenuLabel">Paused</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close" id="pauseMenuX">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
@@ -70,7 +70,7 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal" id="pauseMenuClose" >Close</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal" id="pauseMenuResume">Resume</button>
                         <button type="button" class="btn btn-primary" id="pauseMenuStart">Start</button>
                     </div>
                 </div>
@@ -118,7 +118,14 @@
                 S: { blocks: [0x06C0, 0x8C40, 0x6C00, 0x4620], color: 'green' },
                 Z: { blocks: [0x0C60, 0x4C80, 0xC600, 0x2640], color: 'red' },
                 T: { blocks: [0x0E40, 0x4C40, 0x4E00, 0x4640], color: 'purple' },
-            }
+            };
+            const TOUCHSTATE = { 
+                DEFAULT = 1, 
+                LEFT = 2,
+                RIGHT = 3,
+                DOWN = 4,
+                ROTATE = 5,
+            };
 
             //
             //Game Variables
@@ -135,6 +142,10 @@
             var inputTime = 0;
             var blocks = [];
             var input = {};
+            var initialTouchPos;
+            var lastTouchPos;
+            var currentState = TOUCHSTATE.DEFAULT;
+            var isGestureMove = false;
             var invalidate;
             var isPlaying = true;
 
@@ -177,6 +188,9 @@
                 nextTetrominoCanvas.width = blockWidth * maxNextColumns;
                 nextContext = nextTetrominoCanvas.getContext('2d');
 
+                itemWidth = tetrisCanvas.width;
+                slopValue = itemWidth * (1 / 4);
+
             }
 
             function setUpPause() {
@@ -201,7 +215,8 @@
 
                 if (inputTime > 4 / 60) {
                     inputTime = 0;
-                    handleInput();
+                    handleKeyboardInput();
+                    handleTouchInput();
                 }
 
                 dropTime += time;
@@ -217,7 +232,131 @@
                 document.addEventListener("keydown", handleKeyDown);
                 document.addEventListener("keyup", handleKeyUp);
                 get("pauseMenuStart").addEventListener("click", pause);
-                get("pauseMenuClose").addEventListener("click", pause);                
+                get("pauseMenuResume").addEventListener("click", pause);
+                get("pauseMenuX").addEventListener("click", pause);
+                let tetrisCanvas = get("tetrisCanvas");
+
+                // Check if pointer events are supported.
+                if (window.PointerEvent) {
+                    // Add Pointer Event Listener
+                    tetrisCanvas.addEventListener('pointerdown', handleGestureStart, true);
+                    tetrisCanvas.addEventListener('pointermove', handleGestureMove, true);
+                    tetrisCanvas.addEventListener('pointerup', handleGestureEnd, true);
+                    tetrisCanvas.addEventListener('pointercancel', handleGestureEnd, true);
+                } else {
+                    // Add Touch Listener
+                    tetrisCanvas.addEventListener('touchstart', handleGestureStart, true);
+                    tetrisCanvas.addEventListener('touchmove', handleGestureMove, true);
+                    tetrisCanvas.addEventListener('touchend', handleGestureEnd, true);
+                    tetrisCanvas.addEventListener('touchcancel', handleGestureEnd, true);
+
+                    // Add Mouse Listener
+                    tetrisCanvas.addEventListener('mousedown', handleGestureStart, true);
+                }
+
+            }
+
+            function handleGestureStart(evt) {
+                evt.preventDefault();
+
+                if (evt.touches && evt.touches.length > 1) {
+                    return;
+                }
+
+                console.info("Gensture Start");
+
+                if (window.PointerEvent) {
+                    evt.target.setPointerCapture(evt.pointerId);
+                } else {
+                    document.addEventListener('mousemove', handleGestureMove, true);
+                    document.addEventListener('mouseup', handleGestureEnd, true);
+                }
+
+                initialTouchPos = getGesturePointFromEvent(evt);
+
+            }
+
+            function handleGestureMove(evt) {
+                evt.preventDefault();
+
+                if (!initialTouchPos) {
+                    return;
+                }
+
+                console.info("Gensture Move");
+
+                isGestureMove = true;
+                lastTouchPos = getGesturePointFromEvent(evt);
+
+                updateSwipeRestPosition();
+
+                initialTouchPos = lastTouchPos
+
+            }
+
+            function handleGestureEnd(evt) {
+                evt.preventDefault();
+
+                if (evt.touches && evt.touches.length > 0) {
+                    return;
+                }
+
+                console.info("Gensture End");
+
+                if (window.PointerEvent) {
+                    evt.target.releasePointerCapture(evt.pointerId);
+                } else {
+                    document.removeEventListener('mousemove', handleGestureMove, true);
+                    document.removeEventListener('mouseup', handleGestureEnd, true);
+                }
+
+                updateSwipeRestPosition();
+
+                initialTouchPos = null;
+                isGestureMove = false;
+            }
+
+            function updateSwipeRestPosition() {
+
+                if (!isGestureMove) {
+                    currentState = TOUCHSTATE.ROTATE;
+                    return;
+                }
+
+                var differenceInX = initialTouchPos.x - lastTouchPos.x;
+                var differenceInY = initialTouchPos.y - lastTouchPos.y;
+                var newState = TOUCHSTATE.DEFAULT;
+
+
+                if (Math.abs(differenceInX) > Math.abs(differenceInY)) {
+                    if (differenceInX > 0) {
+                        newState = TOUCHSTATE.LEFT;
+                    } else if (differenceInX < 0) {
+                        newState = TOUCHSTATE.RIGHT;
+                    }
+                } else {
+                    if (differenceInY < 0) {
+                        newState = TOUCHSTATE.DOWN;
+                    }
+                }
+
+                currentState = newState;
+                console.info(currentState);
+
+            }
+
+            function getGesturePointFromEvent(evt) {
+                var point = {};
+
+                if (evt.targetTouches) {
+                    point.x = evt.targetTouches[0].clientX;
+                    point.y = evt.targetTouches[0].clientY;
+                } else {
+                    point.x = evt.clientX;
+                    point.y = evt.clientY;
+                }
+
+                return point;
             }
 
             function handleKeyDown(event) {
@@ -385,7 +524,7 @@
                 invalidatePause();
             }
 
-            function handleInput() {
+            function handleKeyboardInput() {
 
                 if (!input) {
                     return;
@@ -411,6 +550,31 @@
                         break;
                     default:
                 }
+
+            }
+
+            function handleTouchInput() {
+
+                if (currentState === TOUCHSTATE.DEFAULT) {
+                    return;
+                }
+
+                switch (currentState) {
+                    case TOUCHSTATE.LEFT:
+                        move(KEY.LEFT);
+                        break;
+                    case TOUCHSTATE.RIGHT:
+                        move(KEY.RIGHT);
+                        break;
+                    case TOUCHSTATE.DOWN:
+                        drop();
+                        break;
+                    case TOUCHSTATE.ROTATE:
+                        rotate();
+                        break;
+                }
+
+                currentState = TOUCHSTATE.DEFAULT;
 
             }
 
