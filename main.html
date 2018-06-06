@@ -185,6 +185,18 @@
 
             function setupCanvas() {
 
+                resize();
+
+                var tetrisCanvas = get("tetrisCanvas");
+                tetrisContext = tetrisCanvas.getContext('2d');
+
+                var nextTetrominoCanvas = get("nextTetrominoCanvas");
+                nextContext = nextTetrominoCanvas.getContext('2d');
+
+            }
+
+            function resize(){
+
                 let canvasDiv = get("canvasDiv");
                 blockHeight = window.innerHeight / maxRows;
                 blockWidth = (canvasDiv.clientWidth  * .75) / maxColumns;
@@ -198,15 +210,10 @@
                 var tetrisCanvas = get("tetrisCanvas");
                 tetrisCanvas.height = blockHeight * maxRows;
                 tetrisCanvas.width = blockWidth * maxColumns;
-                tetrisContext = tetrisCanvas.getContext('2d');
 
                 var nextTetrominoCanvas = get("nextTetrominoCanvas");
                 nextTetrominoCanvas.height = blockHeight * maxNextRows;
                 nextTetrominoCanvas.width = blockWidth * maxNextColumns;
-                nextContext = nextTetrominoCanvas.getContext('2d');
-
-                itemWidth = tetrisCanvas.width;
-                slopValue = itemWidth * (1 / 4);
 
             }
 
@@ -248,6 +255,7 @@
             function registerEvents() {
                 document.addEventListener("keydown", handleKeyDown);
                 document.addEventListener("keyup", handleKeyUp);
+                window.addEventListener("resize", resize)
                 get("pauseMenuStart").addEventListener("click", pause);
                 get("pauseMenuResume").addEventListener("click", pause);
                 get("pauseMenuX").addEventListener("click", pause);
