@@ -70,7 +70,7 @@
                             <li>NOT SUPPORTED - Pause</li>
                             <li>Swipe - Moves Piece</li>
                             <li>Tap - Rotates Piece</li>
-                        </ul>                        
+                        </ul>
                         <h5>Choose New Level</h5>
                         <div id="levels">
                         </div>
@@ -125,8 +125,8 @@
                 Z: { blocks: [0x0C60, 0x4C80, 0xC600, 0x2640], color: 'red' },
                 T: { blocks: [0x0E40, 0x4C40, 0x4E00, 0x4640], color: 'purple' },
             };
-            const TOUCHSTATE = { 
-                DEFAULT: 1, 
+            const TOUCHSTATE = {
+                DEFAULT: 1,
                 LEFT: 2,
                 RIGHT: 3,
                 DOWN: 4,
@@ -152,6 +152,7 @@
             var lastTouchPos;
             var currentState = TOUCHSTATE.DEFAULT;
             var isGestureMove = false;
+            var rafPending = false;
             var invalidate;
             var isPlaying = true;
 
@@ -241,24 +242,16 @@
                 get("pauseMenuResume").addEventListener("click", pause);
                 get("pauseMenuX").addEventListener("click", pause);
                 let tetrisCanvas = get("tetrisCanvas");
+                
+                // Add Touch Listener
+                tetrisCanvas.addEventListener('touchstart', handleGestureStart, true);
+                tetrisCanvas.addEventListener('touchmove', handleGestureMove, true);
+                tetrisCanvas.addEventListener('touchend', handleGestureEnd, true);
+                tetrisCanvas.addEventListener('touchcancel', handleGestureEnd, true);
 
-                // Check if pointer events are supported.
-                if (window.PointerEvent) {
-                    // Add Pointer Event Listener
-                    tetrisCanvas.addEventListener('pointerdown', handleGestureStart, true);
-                    tetrisCanvas.addEventListener('pointermove', handleGestureMove, true);
-                    tetrisCanvas.addEventListener('pointerup', handleGestureEnd, true);
-                    tetrisCanvas.addEventListener('pointercancel', handleGestureEnd, true);
-                } else {
-                    // Add Touch Listener
-                    tetrisCanvas.addEventListener('touchstart', handleGestureStart, true);
-                    tetrisCanvas.addEventListener('touchmove', handleGestureMove, true);
-                    tetrisCanvas.addEventListener('touchend', handleGestureEnd, true);
-                    tetrisCanvas.addEventListener('touchcancel', handleGestureEnd, true);
-
-                    // Add Mouse Listener
-                    tetrisCanvas.addEventListener('mousedown', handleGestureStart, true);
-                }
+                // Add Mouse Listener
+                tetrisCanvas.addEventListener('mousedown', handleGestureStart, true);
+                // }
 
             }
 
@@ -271,12 +264,12 @@
 
                 console.info("Gensture Start");
 
-                if (window.PointerEvent) {
-                    evt.target.setPointerCapture(evt.pointerId);
-                } else {
-                    document.addEventListener('mousemove', handleGestureMove, true);
-                    document.addEventListener('mouseup', handleGestureEnd, true);
-                }
+                // if (window.PointerEvent) {
+                //     evt.target.setPointerCapture(evt.pointerId);
+                // } else {
+                document.addEventListener('mousemove', handleGestureMove, true);
+                document.addEventListener('mouseup', handleGestureEnd, true);
+
 
                 initialTouchPos = getGesturePointFromEvent(evt);
 
@@ -288,6 +281,11 @@
                 if (!initialTouchPos) {
                     return;
                 }
+
+                if (rafPending)
+                    return;
+
+                rafPending = true;
 
                 console.info("Gensture Move");
 
@@ -309,17 +307,14 @@
 
                 console.info("Gensture End");
 
-                if (window.PointerEvent) {
-                    evt.target.releasePointerCapture(evt.pointerId);
-                } else {
-                    document.removeEventListener('mousemove', handleGestureMove, true);
-                    document.removeEventListener('mouseup', handleGestureEnd, true);
-                }
+                document.removeEventListener('mousemove', handleGestureMove, true);
+                document.removeEventListener('mouseup', handleGestureEnd, true);
 
                 updateSwipeRestPosition();
 
                 initialTouchPos = null;
                 isGestureMove = false;
+                rafPending = false;
             }
 
             function updateSwipeRestPosition() {
@@ -581,6 +576,7 @@
                 }
 
                 currentState = TOUCHSTATE.DEFAULT;
+                rafPending = false;
 
             }
 
