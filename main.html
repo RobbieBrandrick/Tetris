@@ -138,7 +138,7 @@
             var nextContext;
             var current;
             var blockWidth = 50;
-            var blockHeight = 50;            
+            var blockHeight = 50;
             var next;
             var score = 0;
             var lines = 0;
@@ -152,7 +152,6 @@
             var lastTouchPos;
             var currentState = TOUCHSTATE.DEFAULT;
             var isGestureMove = false;
-            var rafPending = false;
             var invalidate;
             var isPlaying = true;
 
@@ -195,13 +194,13 @@
 
             }
 
-            function resize(){
+            function resize() {
 
                 let canvasDiv = get("canvasDiv");
                 blockHeight = window.innerHeight / maxRows;
-                blockWidth = (canvasDiv.clientWidth  * .75) / maxColumns;
+                blockWidth = (canvasDiv.clientWidth * .75) / maxColumns;
 
-                if(blockHeight < blockWidth){
+                if (blockHeight < blockWidth) {
                     blockWidth = blockHeight;
                 } else {
                     blockHeight = blockWidth;
@@ -280,7 +279,7 @@
                     return;
                 }
 
-                console.info("Gensture Start");
+                console.info("Gesture Start");
 
                 document.addEventListener('mousemove', handleGestureMove, true);
                 document.addEventListener('mouseup', handleGestureEnd, true);
@@ -297,19 +296,13 @@
                     return;
                 }
 
-                if (rafPending)
-                    return;
+                console.info("Gesture Move");
 
-                rafPending = true;
-
-                console.info("Gensture Move");
-
-                isGestureMove = true;
                 lastTouchPos = getGesturePointFromEvent(evt);
 
                 updateSwipeRestPosition();
 
-                initialTouchPos = lastTouchPos
+                initialTouchPos = lastTouchPos;
 
             }
 
@@ -325,46 +318,42 @@
                 document.removeEventListener('mousemove', handleGestureMove, true);
                 document.removeEventListener('mouseup', handleGestureEnd, true);
 
-                updateSwipeRestPosition();
+                if (!isGestureMove) {
+                    currentState = TOUCHSTATE.ROTATE;
+                }
 
                 initialTouchPos = null;
                 isGestureMove = false;
-                rafPending = false;
             }
 
             function updateSwipeRestPosition() {
 
-                if (!isGestureMove) {
-                    currentState = TOUCHSTATE.ROTATE;
-                    return;
-                }
-
                 var differenceInX = initialTouchPos.x - lastTouchPos.x;
                 var differenceInY = initialTouchPos.y - lastTouchPos.y;
-                var newState = TOUCHSTATE.DEFAULT;
-
-
+                console.info("" + differenceInX + "x, " + differenceInY + "y");
                 if (Math.abs(differenceInX) > Math.abs(differenceInY)) {
-                    if (differenceInX > 0) {
-                        newState = TOUCHSTATE.LEFT;
-                    } else if (differenceInX < 0) {
-                        newState = TOUCHSTATE.RIGHT;
+                    if (differenceInX > 5) {
+                        currentState = TOUCHSTATE.LEFT;
+                    } else if (differenceInX < -5) {
+                        currentState = TOUCHSTATE.RIGHT;
                     }
                 } else {
-                    if (differenceInY < 0) {
-                        newState = TOUCHSTATE.DOWN;
+                    if (differenceInY < -5) {
+                        currentState = TOUCHSTATE.DOWN;
                     }
                 }
 
-                currentState = newState;
-                console.info(currentState);
+                if (!isGestureMove && currentState != TOUCHSTATE.DEFAULT) {
+                    isGestureMove = true;
+                }
 
             }
 
             function getGesturePointFromEvent(evt) {
+
                 var point = {};
 
-                if (evt.targetTouches) {
+                if (evt.targetTouches && evt.touches.length > 0) {
                     point.x = evt.targetTouches[0].clientX;
                     point.y = evt.targetTouches[0].clientY;
                 } else {
@@ -591,7 +580,6 @@
                 }
 
                 currentState = TOUCHSTATE.DEFAULT;
-                rafPending = false;
 
             }
 
