@@ -18,34 +18,20 @@
 <body>
 
     <div class="container">
+        <div class="row" id="stats">
+            <div class="col align-middle" style="font-size: 1rem;">
+                <label>Level</label>
+                <span id="level">0</span>
+                <label>Lines</label>
+                <span id="lines">0</span>
+                <label>Score</label>
+                <span id="score">0</span>
+                <canvas id="nextTetrominoCanvas"></canvas>
+            </div>
+        </div>
         <div class="row">
             <div id="canvasDiv" class="col">
                 <canvas id="tetrisCanvas"></canvas>
-            </div>
-            <div class="col" style="font-size:2em">
-                <div class="row">
-                    <div class="col-md-12">
-                        <canvas id="nextTetrominoCanvas"></canvas>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-12">
-                        <label>Level</label>
-                        <span id="level">0</span>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-12">
-                        <label>Lines</label>
-                        <span id="lines">0</span>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-12">
-                        <label>Score</label>
-                        <span id="score">0</span>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -107,8 +93,6 @@
             //
             const maxLevel = 18;
             const levels = [48, 43, 38, 33, 28, 23, 18, 13, 8, 6, 5, 5, 5, 4, 4, 4, 3, 3, 3, 2]
-            //19-28             2 (0.03s)
-            // 29+             1 (0.02s)                
             const maxRows = 20;
             const maxColumns = 10;
             const maxNextColumns = 5;
@@ -197,8 +181,9 @@
             function resize() {
 
                 let canvasDiv = get("canvasDiv");
-                blockHeight = window.innerHeight / maxRows;
-                blockWidth = (canvasDiv.clientWidth * .75) / maxColumns;
+                let stats = get("stats");
+                blockHeight = (window.innerHeight - stats.clientHeight - 32) / maxRows;
+                blockWidth = (canvasDiv.clientWidth - 32) / maxColumns;
 
                 if (blockHeight < blockWidth) {
                     blockWidth = blockHeight;
@@ -211,8 +196,11 @@
                 tetrisCanvas.width = blockWidth * maxColumns;
 
                 var nextTetrominoCanvas = get("nextTetrominoCanvas");
-                nextTetrominoCanvas.height = blockHeight * maxNextRows;
-                nextTetrominoCanvas.width = blockWidth * maxNextColumns;
+                nextTetrominoCanvas.height = blockHeight * maxNextRows * 0.5;
+                nextTetrominoCanvas.width = blockWidth * maxNextColumns * 0.5;
+
+                invalidate();
+                invalidateNext();
 
             }
 
@@ -224,7 +212,7 @@
 
                     let button = document.createElement("button");
                     button.innerText = i;
-                    button.onclick = function () { reset(); level = this.innerText; $("#pauseMenu").modal('toggle'); };
+                    button.onclick = function () { reset(); level = parseInt(this.innerText); $("#pauseMenu").modal('toggle'); };
                     button.classList = "btn btn-primary";
                     levels.appendChild(button);
 
@@ -236,7 +224,7 @@
 
                 inputTime += time;
 
-                if (inputTime > 4 / 60) {
+                if (inputTime > 3 / 60) {
                     inputTime = 0;
                     handleKeyboardInput();
                     handleTouchInput();
@@ -252,24 +240,21 @@
             }
 
             function registerEvents() {
-                document.addEventListener("keydown", handleKeyDown);
-                document.addEventListener("keyup", handleKeyUp);
+
+                document.addEventListener("keydown", handleKeyUpDown);
+                document.addEventListener("keyup", handleKeyUpDown);
                 window.addEventListener("resize", resize)
+
                 get("pauseMenuStart").addEventListener("click", pause);
                 get("pauseMenuResume").addEventListener("click", pause);
                 get("pauseMenuX").addEventListener("click", pause);
-                let tetrisCanvas = get("tetrisCanvas");
 
-                // Add Touch Listener
+                let tetrisCanvas = get("tetrisCanvas");
                 tetrisCanvas.addEventListener('touchstart', handleGestureStart, true);
                 tetrisCanvas.addEventListener('touchmove', handleGestureMove, true);
                 tetrisCanvas.addEventListener('touchend', handleGestureEnd, true);
                 tetrisCanvas.addEventListener('touchcancel', handleGestureEnd, true);
-
-                // Add Mouse Listener
                 tetrisCanvas.addEventListener('mousedown', handleGestureStart, true);
-                // }
-
             }
 
             function handleGestureStart(evt) {
@@ -278,8 +263,6 @@
                 if (evt.touches && evt.touches.length > 1) {
                     return;
                 }
-
-                console.info("Gesture Start");
 
                 document.addEventListener('mousemove', handleGestureMove, true);
                 document.addEventListener('mouseup', handleGestureEnd, true);
@@ -296,8 +279,6 @@
                     return;
                 }
 
-                console.info("Gesture Move");
-
                 lastTouchPos = getGesturePointFromEvent(evt);
 
                 updateSwipeRestPosition();
@@ -313,8 +294,6 @@
                     return;
                 }
 
-                console.info("Gensture End");
-
                 document.removeEventListener('mousemove', handleGestureMove, true);
                 document.removeEventListener('mouseup', handleGestureEnd, true);
 
@@ -328,17 +307,17 @@
 
             function updateSwipeRestPosition() {
 
-                var differenceInX = initialTouchPos.x - lastTouchPos.x;
-                var differenceInY = initialTouchPos.y - lastTouchPos.y;
-                console.info("" + differenceInX + "x, " + differenceInY + "y");
+                let differenceInX = initialTouchPos.x - lastTouchPos.x;
+                let differenceInY = initialTouchPos.y - lastTouchPos.y;
+
                 if (Math.abs(differenceInX) > Math.abs(differenceInY)) {
-                    if (differenceInX > 5) {
+                    if (differenceInX > 3) {
                         currentState = TOUCHSTATE.LEFT;
-                    } else if (differenceInX < -5) {
+                    } else if (differenceInX < -3) {
                         currentState = TOUCHSTATE.RIGHT;
                     }
                 } else {
-                    if (differenceInY < -5) {
+                    if (differenceInY < -3) {
                         currentState = TOUCHSTATE.DOWN;
                     }
                 }
@@ -351,7 +330,7 @@
 
             function getGesturePointFromEvent(evt) {
 
-                var point = {};
+                let point = {};
 
                 if (evt.targetTouches && evt.touches.length > 0) {
                     point.x = evt.targetTouches[0].clientX;
@@ -364,52 +343,22 @@
                 return point;
             }
 
-            function handleKeyDown(event) {
+            function handleKeyUpDown(event) {
 
-                var handled = false;
+                let handled = false;
 
-                if (event.keyCode == KEY.LEFT) {
-                    input = KEY.LEFT;
-                    handled = true;
-                } else if (event.keyCode == KEY.UP) {
-                    input = KEY.UP;
-                    handled = true;
-                } else if (event.keyCode == KEY.RIGHT) {
-                    input = KEY.RIGHT;
-                    handled = true;
-                } else if (event.keyCode == KEY.DOWN) {
-                    input = KEY.DOWN;
-                    handled = true;
-                } else if (event.keyCode == KEY.SPACE) {
-                    input = KEY.SPACE;
-                    handled = true;
-                } else if (event.keyCode == KEY.ESC) {
-                    input = KEY.ESC;
-                    handled = true;
-                }
+                for (let key in KEY) {
 
-                if (handled) {
-                    event.preventDefault();
-                }
+                    if (event.keyCode == KEY[key]) {
 
-            };
+                        input = event.type == "keydown" ? KEY[key] : 0;
 
-            function handleKeyUp(event) {
+                        handled = true;
 
-                var handled = false;
+                        break;
 
-                if (event.keyCode == KEY.LEFT) {
-                    input = 0;
-                    handled = true;
-                } else if (event.keyCode == KEY.UP) {
-                    input = 0;
-                    handled = true;
-                } else if (event.keyCode == KEY.RIGHT) {
-                    input = 0;
-                    handled = true;
-                } else if (event.keyCode == KEY.DOWN) {
-                    input = 0;
-                    handled = true;
+                    }
+
                 }
 
                 if (handled) {
@@ -718,7 +667,7 @@
 
             function updateScore(clearedLines) {
 
-                score += clearedLines > 0 ? 100 * Math.pow(2, clearedLines - 1) : 0;
+                score += clearedLines > 0 ? 100 * Math.pow(2, clearedLines - 1) * (level + 1) : 0;
 
             }
 
@@ -783,7 +732,7 @@
                 nextContext.clearRect(0, 0, blockWidth * maxNextColumns, blockHeight * maxNextRows);
 
                 forEachBlock(next, 0.5, 0.5, function (x, y) {
-                    drawBlock(nextContext, x, y, next.color);
+                    drawNextBlock(nextContext, x, y, next.color);
                 })
 
                 invalidate.next = false;
@@ -803,6 +752,12 @@
             function drawBlock(ctx, x, y, color) {
                 ctx.fillStyle = color;
                 ctx.fillRect(x * blockWidth, y * blockWidth, blockWidth, blockHeight);
+                ctx.fill();
+            }
+
+            function drawNextBlock(ctx, x, y, color) {
+                ctx.fillStyle = color;
+                ctx.fillRect(x * blockWidth * 0.5, y * blockWidth * 0.5, blockWidth * 0.5, blockHeight * 0.5);
                 ctx.fill();
             }
 
