@@ -10,16 +10,26 @@
         canvas {
             border: 1px solid black;
         }
+
+        .horizontalCenter {
+            width: 100%;
+            text-align: center;
+        }
+
+        canvas {
+            display: inline;
+        }
     </style>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB"
         crossorigin="anonymous">
+
 </head>
 
 <body>
 
     <div class="container">
         <div class="row" id="stats">
-            <div class="col align-middle" style="font-size: 1rem;">
+            <div class="col align-middle horizontalCenter" style="font-size: 1rem;">
                 <label>Level</label>
                 <span id="level">0</span>
                 <label>Lines</label>
@@ -30,7 +40,7 @@
             </div>
         </div>
         <div class="row">
-            <div id="canvasDiv" class="col">
+            <div id="canvasDiv" class="col horizontalCenter">
                 <canvas id="tetrisCanvas"></canvas>
             </div>
         </div>
@@ -55,6 +65,7 @@
                         <ul>
                             <li>NOT SUPPORTED - Pause</li>
                             <li>Swipe - Moves Piece</li>
+                            <li>Quick Swipe Down- Force Piece Down</li>
                             <li>Tap - Rotates Piece</li>
                         </ul>
                         <h5>Choose New Level</h5>
@@ -113,6 +124,7 @@
                 RIGHT: 3,
                 DOWN: 4,
                 ROTATE: 5,
+                FORCEDOWN: 6,
             };
 
             //
@@ -136,6 +148,7 @@
             var lastTouchPos;
             var currentState = TOUCHSTATE.DEFAULT;
             var isGestureMove = false;
+            var isForceDown = false;
             var invalidate;
             var isPlaying = true;
 
@@ -180,10 +193,36 @@
 
             function resize() {
 
-                let canvasDiv = get("canvasDiv");
+                resizeNextCanvas();
+                resizeCanvas();
+
+                invalidate();
+                invalidateNext();
+
+            }
+
+            function resizeNextCanvas() {
+
+                blockHeight = (window.innerHeight - 32) / maxRows;
+                blockWidth = (window.innerWidth - 32) / maxColumns;
+
+                if (blockHeight < blockWidth) {
+                    blockWidth = blockHeight;
+                } else {
+                    blockHeight = blockWidth;
+                }
+
+                var nextTetrominoCanvas = get("nextTetrominoCanvas");
+                nextTetrominoCanvas.height = blockHeight * maxNextRows * 0.5;
+                nextTetrominoCanvas.width = blockWidth * maxNextColumns * 0.5;
+
+            }
+
+            function resizeCanvas() {
+
                 let stats = get("stats");
                 blockHeight = (window.innerHeight - stats.clientHeight - 32) / maxRows;
-                blockWidth = (canvasDiv.clientWidth - 32) / maxColumns;
+                blockWidth = (window.innerWidth - 32) / maxColumns;
 
                 if (blockHeight < blockWidth) {
                     blockWidth = blockHeight;
@@ -194,13 +233,6 @@
                 var tetrisCanvas = get("tetrisCanvas");
                 tetrisCanvas.height = blockHeight * maxRows;
                 tetrisCanvas.width = blockWidth * maxColumns;
-
-                var nextTetrominoCanvas = get("nextTetrominoCanvas");
-                nextTetrominoCanvas.height = blockHeight * maxNextRows * 0.5;
-                nextTetrominoCanvas.width = blockWidth * maxNextColumns * 0.5;
-
-                invalidate();
-                invalidateNext();
 
             }
 
@@ -269,6 +301,7 @@
 
 
                 initialTouchPos = getGesturePointFromEvent(evt);
+                isForceDown = false;
 
             }
 
@@ -276,6 +309,10 @@
                 evt.preventDefault();
 
                 if (!initialTouchPos) {
+                    return;
+                }
+
+                if (isForceDown) {
                     return;
                 }
 
@@ -317,7 +354,10 @@
                         currentState = TOUCHSTATE.RIGHT;
                     }
                 } else {
-                    if (differenceInY < -3) {
+                    if (differenceInY < -30) {
+                        currentState = TOUCHSTATE.FORCEDOWN;
+                        isForceDown = true;
+                    } else if (differenceInY < -3) {
                         currentState = TOUCHSTATE.DOWN;
                     }
                 }
@@ -526,6 +566,9 @@
                     case TOUCHSTATE.ROTATE:
                         rotate();
                         break;
+                    case TOUCHSTATE.FORCEDOWN:
+                        forceDrop();
+                        break;
                 }
 
                 currentState = TOUCHSTATE.DEFAULT;
@@ -662,6 +705,20 @@
                     invalidate();
 
                 }
+
+            }
+
+            function forceDrop() {
+
+                if (!isPlaying) {
+                    return;
+                }
+
+                while (move(KEY.DOWN)) {
+
+                }
+
+                drop();
 
             }
 
