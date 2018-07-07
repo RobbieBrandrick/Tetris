@@ -320,7 +320,9 @@
 
                 updateSwipeRestPosition();
 
-                initialTouchPos = lastTouchPos;
+                if (currentState != TOUCHSTATE.DEFAULT) {
+                    initialTouchPos = lastTouchPos;
+                }
 
             }
 
