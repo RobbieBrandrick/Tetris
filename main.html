@@ -7,10 +7,6 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Tetris</title>
     <style type="text/css">
-        canvas {
-            border: 1px solid black;
-        }
-
         .horizontalCenter {
             width: 100%;
             text-align: center;
@@ -18,6 +14,17 @@
 
         canvas {
             display: inline;
+            background: rgb(60, 30, 90);
+            border: 5px solid RebeccaPurple;
+        }
+
+        body {
+            background-color: black !important;
+        }
+
+        #stats {
+            font-size: 1rem;
+            color: white;
         }
     </style>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB"
@@ -28,20 +35,30 @@
 <body>
 
     <div class="container">
+        <div class="row" id="nextPiece">
+            <div class="col align-middle horizontalCenter">
+                <canvas id="nextTetrominoCanvas"></canvas>
+            </div>
+        </div>
         <div class="row" id="stats">
-            <div class="col align-middle horizontalCenter" style="font-size: 1rem;">
+            <div class="col align-middle horizontalCenter">
                 <label>Level</label>
                 <span id="level">0</span>
                 <label>Lines</label>
                 <span id="lines">0</span>
                 <label>Score</label>
                 <span id="score">0</span>
-                <canvas id="nextTetrominoCanvas"></canvas>
             </div>
         </div>
         <div class="row">
             <div id="canvasDiv" class="col horizontalCenter">
+                <button class="btn btn-outline-secondary pause">
+                    &#x23f8;
+                </button>
                 <canvas id="tetrisCanvas"></canvas>
+                <button class="btn btn-outline-secondary pause">
+                    &#x23f8;
+                </button>
             </div>
         </div>
 
@@ -63,7 +80,7 @@
                         </ul>
                         <h5>Touch/Mouse Controls</h5>
                         <ul>
-                            <li>NOT SUPPORTED - Pause</li>
+                            <li>Pause Button - Pause</li>
                             <li>Swipe - Moves Piece</li>
                             <li>Quick Swipe Down- Force Piece Down</li>
                             <li>Tap - Rotates Piece</li>
@@ -74,7 +91,6 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal" id="pauseMenuResume">Resume</button>
-                        <button type="button" class="btn btn-primary" id="pauseMenuStart">Start</button>
                     </div>
                 </div>
             </div>
@@ -97,6 +113,7 @@
             //
             function timestamp() { return performance.now(); }
             function get(id) { return document.getElementById(id); }
+            function getByClass(c) { return document.getElementsByClassName(c); }
             function html(id, html) { get(id).innerHTML = html; }
 
             //
@@ -106,8 +123,8 @@
             const levels = [48, 43, 38, 33, 28, 23, 18, 13, 8, 6, 5, 5, 5, 4, 4, 4, 3, 3, 3, 2]
             const maxRows = 20;
             const maxColumns = 10;
-            const maxNextColumns = 5;
-            const maxNextRows = 5;
+            const maxNextColumns = 4.5;
+            const maxNextRows = 4;
             const KEY = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, ESC: 27, SPACE: 32 };
             const tetrominoes = {
                 I: { blocks: [0x0F00, 0x2222, 0x00F0, 0x4444], color: 'cyan' },
@@ -221,7 +238,8 @@
             function resizeCanvas() {
 
                 let stats = get("stats");
-                blockHeight = (window.innerHeight - stats.clientHeight - 32) / maxRows;
+                let nextPiece = get("nextPiece");
+                blockHeight = (window.innerHeight - stats.clientHeight - nextPiece.clientHeight - 32) / maxRows;
                 blockWidth = (window.innerWidth - 32) / maxColumns;
 
                 if (blockHeight < blockWidth) {
@@ -277,9 +295,14 @@
                 document.addEventListener("keyup", handleKeyUpDown);
                 window.addEventListener("resize", resize)
 
-                get("pauseMenuStart").addEventListener("click", pause);
                 get("pauseMenuResume").addEventListener("click", pause);
                 get("pauseMenuX").addEventListener("click", pause);
+
+                let pauseButtons = getByClass("pause");
+
+                for (let pauseButton of pauseButtons) {
+                    pauseButton.addEventListener("click", pause);
+                }
 
                 let tetrisCanvas = get("tetrisCanvas");
                 tetrisCanvas.addEventListener('touchstart', handleGestureStart, true);
@@ -350,16 +373,16 @@
                 let differenceInY = initialTouchPos.y - lastTouchPos.y;
 
                 if (Math.abs(differenceInX) > Math.abs(differenceInY)) {
-                    if (differenceInX > 3) {
+                    if (differenceInX > 5) {
                         currentState = TOUCHSTATE.LEFT;
-                    } else if (differenceInX < -3) {
+                    } else if (differenceInX < -5) {
                         currentState = TOUCHSTATE.RIGHT;
                     }
                 } else {
                     if (differenceInY < -30) {
                         currentState = TOUCHSTATE.FORCEDOWN;
                         isForceDown = true;
-                    } else if (differenceInY < -3) {
+                    } else if (differenceInY < -5) {
                         currentState = TOUCHSTATE.DOWN;
                     }
                 }
